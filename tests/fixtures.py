@@ -67,8 +67,12 @@ def get_set_1_expectation() -> Expectation:
 def get_set_2() -> list:
     return copy.deepcopy(
         [
+            # 1 low cost travel day
             {'start_date': '2024-10-01', 'end_date': '2024-10-01', 'cost_zone': 'low'},
+            # 5 high cost full days
             {'start_date': '2024-10-02', 'end_date': '2024-10-06', 'cost_zone': 'high'},
+            # first day overlaps and is superceded by the previous entry.
+            # 2 low cost full days, and 1 low cost travel day
             {'start_date': '2024-10-06', 'end_date': '2024-10-09', 'cost_zone': 'low'},
         ]
     )
@@ -124,9 +128,13 @@ def get_set_3_expectation() -> Expectation:
 def get_set_4() -> list:
     return copy.deepcopy(
         [
+            # 1 low cost travel day
             {'start_date': '2024-10-01', 'end_date': '2024-10-01', 'cost_zone': 'low'},
+            # ignored
             {'start_date': '2024-10-01', 'end_date': '2024-10-01', 'cost_zone': 'low'},
+            # 2 high cost full days
             {'start_date': '2024-10-02', 'end_date': '2024-10-03', 'cost_zone': 'high'},
+            # first 2 days overlap, so ignore. 2 high cost full days, 1 high cost travel day
             {'start_date': '2024-10-02', 'end_date': '2024-10-06', 'cost_zone': 'high'},
         ]
     )
@@ -150,10 +158,15 @@ def get_set_4_expectation() -> Expectation:
 def get_set_5() -> list:
     return copy.deepcopy(
         [
+            # 1 low cost travel day, ignored b/c it is overlapped by a high-cost project on same day
             {'start_date': '2024-10-01', 'end_date': '2024-10-01', 'cost_zone': 'low'},
+            # 1 high cost travel day
             {'start_date': '2024-10-01', 'end_date': '2024-10-01', 'cost_zone': 'high'},
+            # 1 low-cost full day, ignored b/c it is overlapped by a high-cost project on same day
             {'start_date': '2024-10-02', 'end_date': '2024-10-02', 'cost_zone': 'low'},
+            # 1 low-cost full day, ignored b/c it is overlapped by a high-cost project on same day
             {'start_date': '2024-10-03', 'end_date': '2024-10-03', 'cost_zone': 'low'},
+            # 3 high cost full days, 1 high cost travel day
             {'start_date': '2024-10-02', 'end_date': '2024-10-05', 'cost_zone': 'high'},
         ]
     )
