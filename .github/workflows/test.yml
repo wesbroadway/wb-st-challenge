@@ -28,11 +28,11 @@ jobs:
         run: tox -e lint
 
       - name: Run tests for current python version
-        run: python -m unittest tests/*
+        run: python -m unittest tests/*.py
 
       - name: Run tests for current python version
         run: |
-          coverage run -m unittest tests/*
+          coverage run -m unittest tests/*.py
           coverage report
 
 
