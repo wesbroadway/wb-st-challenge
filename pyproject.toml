@@ -1,0 +1,14 @@
+[tool.black]
+skip-string-normalization = 1
+line-length = 120
+
+[tool.isort]
+line_length = 120
+combine_as_imports = true
+lines_after_imports = 2
+lines_between_types = true
+include_trailing_comma = true
+multi_line_output = 3
+skip = ".tox"
+use_parentheses = true
+sections = ["FUTURE", "STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
