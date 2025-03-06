@@ -1,0 +1,13 @@
+[run]
+dynamic_context = test_function
+
+source =
+    wb_st_challenge
+    tests
+
+omit =
+    /.tox/*
+
+[report]
+omit =
+    /.tox/*
