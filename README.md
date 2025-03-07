@@ -21,9 +21,9 @@ This is a tool that will calculate the total reimbursement amount for a set of d
 **Python:**
 
     from wb_st_challenge import processor
-    
-    with open('/path/to/data_file.csv', 'r') as f:
-        result = processor.process_csv_file(f)
+
+    data = processor.get_data_from_csv('/path/to/data_file.csv')
+    result = processor.process_data(data)
     
     print(f'Total reimbursement amount: ${result.total:.2f}')
     print(f'Low-cost travel days: {result.low_cost_travel_days}')
@@ -33,14 +33,31 @@ This is a tool that will calculate the total reimbursement amount for a set of d
 
 **Running tests:**
 
-    python -m unittest tests/test_processor.py
+This project uses `tox`, so the recommended way to run the tests is by simply running it from the command line. A coverage report will be displayed, and also an HTML version will be generated in the `./tmp/coverage` directory:
+
+    $ tox
+      py39-test: commands succeeded
+      py310-test: commands succeeded
+      py311-test: commands succeeded
+      lint: commands succeeded
+      coverage: commands succeeded
+      congratulations :)
+
+You can run individual test environments like so:
+
+    $ tox -e py39-test
+    $ tox -e lint
+
+If you are running this in your IDE, then you should Python's `unittest` module like so:
+
+    $ python -m unittest discover tests -t .
 
 ## Data file structure
 
-The data file should have three columns:
+The data file should have a header row and three columns:
 
-- Start date: `YYYY-mm-dd`
-- End date: `YYYY-mm-dd`
-- Cost zone: "low", "high"
+- start_date: `YYYY-mm-dd`
+- end_date: `YYYY-mm-dd`
+- cost_zone: "low", "high"
 
 See the example file in this repo for reference: [`data_file_example.csv`](./data_file_example.csv)  
