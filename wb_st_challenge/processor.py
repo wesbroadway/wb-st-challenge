@@ -36,13 +36,14 @@ def parse_data_into_list_of_projects(data: list) -> list:
     :return:
     """
     projects = [(parse_date(p["start_date"]), parse_date(p["end_date"]), p["cost_zone"].lower()) for p in data]
-    projects.sort()
+    # Critical bit here: sorting by END date first, START date second.
+    projects = sorted(projects, key=lambda p: (p[1], p[0], p[2]))
     return projects
 
 
 def merge_projects(projects: list) -> list:
     """
-    Merges projects that have contiguous or overalpping dates, but only if the cost zone is the same. Kind of a
+    Merges projects that have contiguous or overlapping dates, but only if the cost zone is the same. Kind of a
     messy-looking algorithm! Basically it manages a list (`merged`) of projects, and as it iterates over the list of
     projects it tries to detect if the end date of the LAST entry in merged is the day before the start date of the
     current entry. And if so, then it updates the end date of that LAST entry, basically extending it to the end date
@@ -99,7 +100,8 @@ def process_data(data: list) -> ReimbursementResult:
 
 def calculate_daily_rates(merged: list) -> dict:
     """
-    Calculates daily rates for the merged project list.
+    Calculates daily rates for the merged project list. Fair warning, this algorithm is a little verbose, but
+    it properly calculates things and has deep testing on it, so we can refactor and optimize it later if needed.
 
     :param merged: List of merged projects
     :return: Dictionary of daily rates {date: (rate, cost_zone, is_travel_day)}
@@ -133,8 +135,6 @@ def calculate_daily_rates(merged: list) -> dict:
                 # Keep the highest rate, prioritizing full days over travel days
                 elif rate > existing_rate or (rate == existing_rate and not is_travel_day):
                     daily_rates[current] = (rate, cost_zone, is_travel_day)
-                else:
-                    pass
 
             else:
                 daily_rates[current] = (rate, cost_zone, is_travel_day)

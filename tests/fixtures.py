@@ -187,3 +187,47 @@ def get_set_5_expectation() -> Expectation:
         low_cost_full_days=0,
         low_cost_travel_days=0,
     )
+
+
+# ------------------------------------
+# Set 6
+# ------------------------------------
+
+
+def get_set_6() -> list:
+    """
+    This is almost the exact same as set 5, except we're changing the order of the first 2 projects,
+    and inverting the cost zones for the other 3, which have a bit of overlapping.
+    :return:
+    """
+    return copy.deepcopy(
+        [
+            # 1 high cost travel day
+            {'start_date': '2024-10-01', 'end_date': '2024-10-01', 'cost_zone': 'high'},
+            # 1 low cost travel day, ignored b/c it is overlapped by a high-cost project on same day
+            {'start_date': '2024-10-01', 'end_date': '2024-10-01', 'cost_zone': 'low'},
+            # 1 high-cost full day
+            {'start_date': '2024-10-02', 'end_date': '2024-10-02', 'cost_zone': 'high'},
+            # 1 high-cost full day
+            {'start_date': '2024-10-03', 'end_date': '2024-10-03', 'cost_zone': 'high'},
+            # 1 low cost full day (2 ignored), and 1 low cost travel days
+            {'start_date': '2024-10-02', 'end_date': '2024-10-05', 'cost_zone': 'low'},
+        ]
+    )
+
+
+def get_set_6_expectation() -> Expectation:
+    return Expectation(
+        total=(
+            # NOTE: this assumes that the highest daily rate is the rate to be used when there's overlap with high/low
+            #  cost zones. Request for clarification has been sent to the client.
+            (LOW_COST_TRAVEL_DAY_RATE * 1)
+            + (LOW_COST_FULL_DAY_RATE * 1)
+            + (HIGH_COST_TRAVEL_DAY_RATE * 1)
+            + (HIGH_COST_FULL_DAY_RATE * 2)
+        ),
+        high_cost_full_days=2,
+        high_cost_travel_days=1,
+        low_cost_full_days=1,
+        low_cost_travel_days=1,
+    )

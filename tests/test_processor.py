@@ -1,9 +1,16 @@
 from datetime import date
 from pathlib import Path
+from random import shuffle
 from unittest import TestCase
-from unittest.mock import call, patch
+from unittest.mock import patch
 
 from wb_st_challenge import processor
+from wb_st_challenge.constants import (
+    HIGH_COST_FULL_DAY_RATE,
+    HIGH_COST_TRAVEL_DAY_RATE,
+    LOW_COST_FULL_DAY_RATE,
+    LOW_COST_TRAVEL_DAY_RATE,
+)
 
 from . import fixtures
 
@@ -27,43 +34,41 @@ class ProcesserGeneralTest(TestCase):
             with self.assertRaises(TypeError):
                 processor.parse_date(date(2024, 1, 2))
 
-    @patch('wb_st_challenge.processor.parse_date')
-    def test_parse_data_into_list_of_projects(self, m_parse_date):
+    def test_parse_data_into_list_of_projects(self):
         with self.subTest('default behavior'):
-            # m_parse_date is called twice per row and we have three rows. By returning these values
-            # we can verify that our end result is what we expect it to be
-            m_parse_date.side_effect = [*(1, 1), *(2, 1), *(1, 3)]
-
-            # The key feature of this data is that the start_date values are in alpha order, while the cost zones are
-            # labelled with the expected position AFTER sorting according to the values returned by the patch.
+            # The key feature of this data is that the sorting prioritizes the end date and THEN the start date values
             data = [
-                {'start_date': 'AAA', 'end_date': 'BBB', 'cost_zone': 'SHOULD BE FIRST'},
-                {'start_date': 'CCC', 'end_date': 'DDD', 'cost_zone': 'SHOULD BE THIRD'},
-                {'start_date': 'EEE', 'end_date': 'FFF', 'cost_zone': 'SHOULD BE SECOND'},
+                {'start_date': '2024-02-10', 'end_date': '2024-02-11', 'cost_zone': 'SHOULD BE FIRST'},
+                {'start_date': '2024-02-12', 'end_date': '2024-02-15', 'cost_zone': 'SHOULD BE THIRD'},
+                {'start_date': '2024-02-13', 'end_date': '2024-02-13', 'cost_zone': 'SHOULD BE SECOND'},
             ]
 
             result = processor.parse_data_into_list_of_projects(data)
 
-            m_parse_date.assert_has_calls(
-                [call('AAA'), call('BBB'), call('CCC'), call('DDD'), call('EEE'), call('FFF')]
-            )
-
-            # Indexes 0 and 1 match up to the mock side_effects from above, but have now been sorted!
+            # Indexes 0 and 1 match up to the mock side_effects from above, but have now been sorted
             # Also, our cost zones should be lower-cased
-            self.assertEqual(result[0][0], 1)
-            self.assertEqual(result[0][1], 1)
+            self.assertEqual(result[0][0], date(2024, 2, 10))
+            self.assertEqual(result[0][1], date(2024, 2, 11))
             self.assertEqual(result[0][2], 'should be first')
 
-            self.assertEqual(result[1][0], 1)
-            self.assertEqual(result[1][1], 3)
+            self.assertEqual(result[1][0], date(2024, 2, 13))
+            self.assertEqual(result[1][1], date(2024, 2, 13))
             self.assertEqual(result[1][2], 'should be second')
 
-            self.assertEqual(result[2][0], 2)
-            self.assertEqual(result[2][1], 1)
+            self.assertEqual(result[2][0], date(2024, 2, 12))
+            self.assertEqual(result[2][1], date(2024, 2, 15))
             self.assertEqual(result[2][2], 'should be third')
 
         with self.subTest('empty list'):
             self.assertEqual(processor.parse_data_into_list_of_projects([]), [])
+
+        with self.subTest('with the list in virtually any order (using shuffle 10 times)'):
+            for _ in range(0, 10):
+                shuffle(data)
+                result = processor.parse_data_into_list_of_projects(data)
+                self.assertEqual(result[0][0], date(2024, 2, 10))
+                self.assertEqual(result[1][0], date(2024, 2, 13))
+                self.assertEqual(result[2][0], date(2024, 2, 12))
 
 
 class MergeProjectsTest(TestCase):
@@ -137,6 +142,7 @@ class ProcessDataTest(TestCase):
             (fixtures.get_set_3(), fixtures.get_set_3_expectation()),
             (fixtures.get_set_4(), fixtures.get_set_4_expectation()),
             (fixtures.get_set_5(), fixtures.get_set_5_expectation()),
+            (fixtures.get_set_6(), fixtures.get_set_6_expectation()),
         ]
 
         for index, (fixture, expectation) in enumerate(fixtures_and_expectation):
@@ -147,6 +153,15 @@ class ProcessDataTest(TestCase):
                 self.assertEqual(result.high_cost_travel_days, expectation.high_cost_travel_days)
                 self.assertEqual(result.low_cost_full_days, expectation.low_cost_full_days)
                 self.assertEqual(result.low_cost_travel_days, expectation.low_cost_travel_days)
+
+    def test_process_data_with_empty_list(self):
+        result = processor.process_data([])
+        self.assertIsInstance(result, processor.ReimbursementResult)
+        self.assertEqual(result.total, 0)
+        self.assertEqual(result.high_cost_full_days, 0)
+        self.assertEqual(result.high_cost_travel_days, 0)
+        self.assertEqual(result.low_cost_full_days, 0)
+        self.assertEqual(result.low_cost_travel_days, 0)
 
 
 class GetDataFromCSVTest(TestCase):
@@ -164,3 +179,169 @@ class GetDataFromCSVTest(TestCase):
         filename = 'doesnt_exists.xzy123'
         with self.assertRaises(FileNotFoundError):
             processor.get_data_from_csv(filename)
+
+
+@patch("wb_st_challenge.processor.make_is_travel_day_tester", return_value=lambda d: False)
+class CalculateDailyRatesTest(TestCase):
+    def test_one_high_cost_day(self, mock_travel_tester):
+        mock_travel_tester.return_value = lambda p: True
+        merged = [(date(2024, 10, 1), date(2024, 10, 1), 'high')]
+        expected = {date(2024, 10, 1): (HIGH_COST_TRAVEL_DAY_RATE, 'high', True)}
+
+        self.assertEqual(processor.calculate_daily_rates(merged), expected)
+
+    def test_two_high_cost_days(self, mock_travel_tester):
+        mock_travel_tester.return_value = lambda p: True
+        merged = [(date(2024, 10, 1), date(2024, 10, 2), 'high')]
+        expected = {
+            date(2024, 10, 1): (HIGH_COST_TRAVEL_DAY_RATE, 'high', True),
+            date(2024, 10, 2): (HIGH_COST_TRAVEL_DAY_RATE, 'high', True),
+        }
+
+        self.assertEqual(processor.calculate_daily_rates(merged), expected)
+
+    def test_multi_high_cost_days(self, mock_travel_tester):
+        mock_travel_tester.return_value = lambda d: d in [date(2024, 10, 1), date(2024, 10, 5)]
+        merged = [(date(2024, 10, 1), date(2024, 10, 5), 'high')]
+        expected = {
+            date(2024, 10, 1): (HIGH_COST_TRAVEL_DAY_RATE, 'high', True),
+            date(2024, 10, 2): (HIGH_COST_FULL_DAY_RATE, 'high', False),
+            date(2024, 10, 3): (HIGH_COST_FULL_DAY_RATE, 'high', False),
+            date(2024, 10, 4): (HIGH_COST_FULL_DAY_RATE, 'high', False),
+            date(2024, 10, 5): (HIGH_COST_TRAVEL_DAY_RATE, 'high', True),
+        }
+
+        self.assertEqual(processor.calculate_daily_rates(merged), expected)
+
+    def test_one_low_cost_day(self, mock_travel_tester):
+        mock_travel_tester.return_value = lambda p: True
+        merged = [(date(2024, 10, 1), date(2024, 10, 1), 'low')]
+        expected = {date(2024, 10, 1): (LOW_COST_TRAVEL_DAY_RATE, 'low', True)}
+
+        self.assertEqual(processor.calculate_daily_rates(merged), expected)
+
+    def test_two_low_cost_days(self, mock_travel_tester):
+        mock_travel_tester.return_value = lambda p: True
+        merged = [(date(2024, 10, 1), date(2024, 10, 2), 'low')]
+        expected = {
+            date(2024, 10, 1): (LOW_COST_TRAVEL_DAY_RATE, 'low', True),
+            date(2024, 10, 2): (LOW_COST_TRAVEL_DAY_RATE, 'low', True),
+        }
+
+        self.assertEqual(processor.calculate_daily_rates(merged), expected)
+
+    def test_multi_low_cost_days(self, mock_travel_tester):
+        mock_travel_tester.return_value = lambda d: d in [date(2024, 10, 1), date(2024, 10, 5)]
+        merged = [(date(2024, 10, 1), date(2024, 10, 5), 'low')]
+        expected = {
+            date(2024, 10, 1): (LOW_COST_TRAVEL_DAY_RATE, 'low', True),
+            date(2024, 10, 2): (LOW_COST_FULL_DAY_RATE, 'low', False),
+            date(2024, 10, 3): (LOW_COST_FULL_DAY_RATE, 'low', False),
+            date(2024, 10, 4): (LOW_COST_FULL_DAY_RATE, 'low', False),
+            date(2024, 10, 5): (LOW_COST_TRAVEL_DAY_RATE, 'low', True),
+        }
+
+        self.assertEqual(processor.calculate_daily_rates(merged), expected)
+
+    def test_high_cost_full_day_overrides_low_cost(self, *_):
+        """Test that a high-cost project overrides a low-cost one on the same day."""
+        merged = [
+            (date(2024, 10, 1), date(2024, 10, 3), 'low'),
+            (date(2024, 10, 2), date(2024, 10, 2), 'high'),
+        ]
+        expected = {
+            date(2024, 10, 1): (LOW_COST_FULL_DAY_RATE, 'low', False),
+            date(2024, 10, 2): (HIGH_COST_FULL_DAY_RATE, 'high', False),
+            date(2024, 10, 3): (LOW_COST_FULL_DAY_RATE, 'low', False),
+        }
+
+        self.assertEqual(processor.calculate_daily_rates(merged), expected)
+
+    def test_high_cost_travel_day_overrides_low_cost(self, mock_travel_tester):
+        """Test that a high-cost project overrides a low-cost one on the same day."""
+        mock_travel_tester.return_value = lambda d: d in [date(2024, 10, 1), date(2024, 10, 3)]
+        merged = [
+            (date(2024, 10, 1), date(2024, 10, 1), 'high'),
+            (date(2024, 10, 1), date(2024, 10, 3), 'low'),
+            (date(2024, 10, 3), date(2024, 10, 3), 'high'),
+        ]
+        expected = {
+            date(2024, 10, 1): (HIGH_COST_TRAVEL_DAY_RATE, 'high', True),
+            date(2024, 10, 2): (LOW_COST_FULL_DAY_RATE, 'low', False),
+            date(2024, 10, 3): (HIGH_COST_TRAVEL_DAY_RATE, 'high', True),
+        }
+
+        self.assertEqual(processor.calculate_daily_rates(merged), expected)
+
+        with self.subTest('shuffled 10x'):
+            for _ in range(0, 10):
+                shuffle(merged)
+                self.assertEqual(processor.calculate_daily_rates(merged), expected)
+
+    def test_non_overlapping_projects(self, *_):
+        """NOTE: This test violates the rules of travel days at the start/end of a sequence."""
+        merged = [
+            (date(2024, 10, 1), date(2024, 10, 2), 'high'),
+            (date(2024, 10, 4), date(2024, 10, 5), 'low'),
+        ]
+        expected = {
+            date(2024, 10, 1): (HIGH_COST_FULL_DAY_RATE, 'high', False),
+            date(2024, 10, 2): (HIGH_COST_FULL_DAY_RATE, 'high', False),
+            date(2024, 10, 4): (LOW_COST_FULL_DAY_RATE, 'low', False),
+            date(2024, 10, 5): (LOW_COST_FULL_DAY_RATE, 'low', False),
+        }
+
+        self.assertEqual(processor.calculate_daily_rates(merged), expected)
+
+    def test_high_cost_low_cost_full_day_overlap(self, *_):
+        """NOTE: This test violates the rules of travel days at the start/end of a sequence."""
+        merged = [
+            (date(2024, 10, 1), date(2024, 10, 1), 'low'),
+            (date(2024, 10, 1), date(2024, 10, 1), 'high'),
+        ]
+        expected = {
+            date(2024, 10, 1): (HIGH_COST_FULL_DAY_RATE, 'high', False),
+        }
+
+        self.assertEqual(processor.calculate_daily_rates(merged), expected)
+
+        with self.subTest('reversed order'):
+            merged = [
+                (date(2024, 10, 1), date(2024, 10, 1), 'high'),
+                (date(2024, 10, 1), date(2024, 10, 1), 'low'),
+            ]
+            expected = {
+                date(2024, 10, 1): (HIGH_COST_FULL_DAY_RATE, 'high', False),
+            }
+
+            self.assertEqual(processor.calculate_daily_rates(merged), expected)
+
+    def test_high_cost_full_day_overlap(self, *_):
+        """NOTE: This test violates the rules of travel days at the start/end of a sequence."""
+        merged = [
+            (date(2024, 10, 1), date(2024, 10, 3), 'high'),
+            (date(2024, 10, 2), date(2024, 10, 2), 'high'),
+        ]
+        expected = {
+            date(2024, 10, 1): (HIGH_COST_FULL_DAY_RATE, 'high', False),
+            date(2024, 10, 2): (HIGH_COST_FULL_DAY_RATE, 'high', False),
+            date(2024, 10, 3): (HIGH_COST_FULL_DAY_RATE, 'high', False),
+        }
+
+        self.assertEqual(processor.calculate_daily_rates(merged), expected)
+
+    def test_empty_input_returns_empty_dict(self, *_):
+        self.assertEqual(processor.calculate_daily_rates([]), {})
+
+    def test_duplicate_low_cost_travel_day_does_not_override(self, mock_travel_tester):
+        """Test that a duplicate low-cost travel day does not override itself."""
+        mock_travel_tester.return_value = lambda p: True
+        merged = [
+            (date(2024, 10, 1), date(2024, 10, 1), 'low'),  # First travel day
+            (date(2024, 10, 1), date(2024, 10, 1), 'low'),  # Duplicate travel day
+        ]
+        expected = {
+            date(2024, 10, 1): (LOW_COST_TRAVEL_DAY_RATE, 'low', True),  # Stays the same
+        }
+
+        self.assertEqual(processor.calculate_daily_rates(merged), expected)
