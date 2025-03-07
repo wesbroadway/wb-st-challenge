@@ -1,7 +1,7 @@
 import os
 import sys
 
-from  wb_st_challenge import processor
+from . import processor
 
 
 def run(_filename: str) -> int:
