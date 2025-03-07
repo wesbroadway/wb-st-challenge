@@ -12,13 +12,24 @@ This is a tool that will calculate the total reimbursement amount for a set of d
 - A full day is reimbursed at a rate of 75 dollars per day in a low cost city.
 - A full day is reimbursed at a rate of 85 dollars per day in a high cost city.
 
+## Installation:
+
+Prerequisites: Python 3.9, 3.10, and/or Python 3.11. Ideally you've got `tox` installed and all three of those versions available.
+
+    git clone https://github.com/wesbroadway/wb-st-challenge.git
+    cd wb-st-challenge
+
 ## Usage instructions:
+
+To use whichever old version of Python you've got (which should be fine!), you can run it like this:
 
 **Bash:**
 
     $ python -m wb_st_challenge <data_file.csv>
 
 **Python:**
+
+Or from within a python application, you can do this:
 
     from wb_st_challenge import processor
 
@@ -30,6 +41,8 @@ This is a tool that will calculate the total reimbursement amount for a set of d
     print(f'Low-cost full days: {result.low_cost_full_days}')
     print(f'High-cost travel days: {result.high_cost_travel_days}')
     print(f'High-cost full days: {result.high_cost_full_days}')
+
+You can also submit a list of dicts to `processor.process_data` if your data is not coming from a CSV. See the [docstring](./wb_st_challenge/processor.py#L85) for details.
 
 **Running tests:**
 

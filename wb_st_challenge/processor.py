@@ -4,8 +4,9 @@
 import csv
 
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
+from typing import Callable, Dict, List, Tuple
 
 from .constants import (
     HIGH_COST_FULL_DAY_RATE,
@@ -24,8 +25,8 @@ class ReimbursementResult:
     low_cost_travel_days: int = 0
 
 
-def parse_date(date_str: str) -> datetime.date:
-    """Convert a date string (YYYY-MM-DD) to a datetime.date object."""
+def parse_date(date_str: str) -> date:
+    """Convert a date string (YYYY-MM-DD) to a date object."""
     return datetime.strptime(date_str, "%Y-%m-%d").date()
 
 
@@ -56,7 +57,7 @@ def merge_projects(projects: list) -> list:
     :param projects: a list of (start_date, end_date, cost_zone) tuples
     :return:
     """
-    merged = []
+    merged: List[Tuple[date, date, str]] = []
     for start, end, cost_zone in projects:
         # If the end date of the most recent entry is >= the day before this project's start date, then proceed...
         if merged and merged[-1][1] >= start - timedelta(days=1):
@@ -86,6 +87,14 @@ def process_data(data: list) -> ReimbursementResult:
     """
     Processes a list of projects and calculates reimbursement totals.
 
+    Example:
+        process_data(
+            [
+                {'start_date': '2024-08-30', 'end_date': '2024-09-05', 'cost_zone': 'high'},
+                {'start_date': '2024-09-05', 'end_date': '2024-09-08', 'cost_zone': 'low'},
+            ]
+        )
+
     :param data: List of project dictionaries with start_date, end_date, and cost_zone.
     :return: A ReimbursementResult containing the total reimbursement and categorized day counts.
     """
@@ -106,11 +115,11 @@ def calculate_daily_rates(merged: list) -> dict:
     :param merged: List of merged projects
     :return: Dictionary of daily rates {date: (rate, cost_zone, is_travel_day)}
     """
-    daily_rates = {}  # { date: (rate, cost_zone, is_travel_day) }
+    daily_rates: Dict[date, Tuple[int, str, bool]] = {}  # { date: (rate, cost_zone, is_travel_day) }
 
     for index, (start, end, cost_zone) in enumerate(merged):
         current = start
-        is_travel_day_tester = make_is_travel_day_tester(merged, index, start, end)
+        is_travel_day_tester: Callable[[date], bool] = make_is_travel_day_tester(merged, index, start, end)
 
         while current <= end:
             is_travel_day = is_travel_day_tester(current)
@@ -144,7 +153,7 @@ def calculate_daily_rates(merged: list) -> dict:
     return daily_rates
 
 
-def make_is_travel_day_tester(merged: list, index: int, start: datetime, end: datetime) -> callable:
+def make_is_travel_day_tester(merged: list, index: int, start: datetime, end: datetime) -> Callable:
     """
     Returns a function that determines if a given day is a travel day.
 
@@ -197,7 +206,7 @@ def calculate_reimbursement_result(daily_rates: dict) -> ReimbursementResult:
     return reimbursement
 
 
-def get_data_from_csv(filename: [str, Path]) -> list:
+def get_data_from_csv(filename: Path) -> list:
     """
 
     :param filename:

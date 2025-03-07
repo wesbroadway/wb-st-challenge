@@ -1,3 +1,4 @@
+from pathlib import Path
 from unittest import TestCase
 from unittest.mock import Mock, call, patch
 
@@ -21,7 +22,7 @@ class MainRunTest(TestCase):
         exit_code = main.run(filename)
         self.assertEqual(exit_code, 0)
 
-        m_processor.get_data_from_csv.assert_called_once_with(filename)
+        m_processor.get_data_from_csv.assert_called_once_with(Path(filename))
         m_processor.process_data.assert_called_once_with(m_processor.get_data_from_csv.return_value)
         m_print.assert_has_calls(
             [

@@ -1,6 +1,9 @@
 import os
 import sys
 
+from pathlib import Path
+from typing import List
+
 from . import processor
 
 
@@ -10,7 +13,7 @@ def run(_filename: str) -> int:
     :param _filename:
     :return:
     """
-    data = processor.get_data_from_csv(_filename)
+    data = processor.get_data_from_csv(Path(_filename))
     result = processor.process_data(data)
 
     print(f'Total: ${result.total:.2f}')
@@ -21,7 +24,7 @@ def run(_filename: str) -> int:
     return 0
 
 
-def main(args: list = None) -> int:
+def main(args: List[str]) -> int:
     """
 
     :param args:
