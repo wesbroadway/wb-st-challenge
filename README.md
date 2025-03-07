@@ -16,7 +16,7 @@ This is a tool that will calculate the total reimbursement amount for a set of d
 
 **Bash:**
 
-    $ python ./wb_st_challenge <data_file.csv>
+    $ python -m wb_st_challenge <data_file.csv>
 
 **Python:**
 
