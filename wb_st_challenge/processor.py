@@ -1,9 +1,11 @@
 """
 
 """
+import csv
 
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from pathlib import Path
 
 from .constants import (
     HIGH_COST_FULL_DAY_RATE,
@@ -33,14 +35,23 @@ def parse_data_into_list_of_projects(data: list) -> list:
     :param data:
     :return:
     """
-    projects = [(parse_date(p["start_date"]), parse_date(p["end_date"]), p["cost_zone"]) for p in data]
+    projects = [(parse_date(p["start_date"]), parse_date(p["end_date"]), p["cost_zone"].lower()) for p in data]
     projects.sort()
     return projects
 
 
 def merge_projects(projects: list) -> list:
     """
-    Merges projects that have contiguous or overalpping dates, but only if the cost zone is the same.
+    Merges projects that have contiguous or overalpping dates, but only if the cost zone is the same. Kind of a
+    messy-looking algorithm! Basically it manages a list (`merged`) of projects, and as it iterates over the list of
+    projects it tries to detect if the end date of the LAST entry in merged is the day before the start date of the
+    current entry. And if so, then it updates the end date of that LAST entry, basically extending it to the end date
+    of this current entry.
+
+    TODO: there's one test we haven't created yet, involving a completely contained pair of dates. We have a test where
+     it's a single low-cost full day within / surrounded by a range of high-cost full days, but we haven't inverted
+     that. It SHOULD work, but we should also write a test for it, basically the inversion of set #5.
+
     :param projects: a list of (start_date, end_date, cost_zone) tuples
     :return:
     """
@@ -184,3 +195,14 @@ def calculate_reimbursement_result(daily_rates: dict) -> ReimbursementResult:
                 reimbursement.low_cost_full_days += 1
 
     return reimbursement
+
+
+def get_data_from_csv(filename: [str, Path]) -> list:
+    """
+
+    :param filename:
+    :return:
+    """
+    with open(filename, 'r', newline='') as csv_file:
+        reader = csv.DictReader(csv_file)
+        return list(reader)

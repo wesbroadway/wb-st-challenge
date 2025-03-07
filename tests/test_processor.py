@@ -1,4 +1,5 @@
 from datetime import date
+from pathlib import Path
 from unittest import TestCase
 from unittest.mock import call, patch
 
@@ -48,17 +49,18 @@ class ProcesserGeneralTest(TestCase):
             )
 
             # Indexes 0 and 1 match up to the mock side_effects from above, but have now been sorted!
+            # Also, our cost zones should be lower-cased
             self.assertEqual(result[0][0], 1)
             self.assertEqual(result[0][1], 1)
-            self.assertEqual(result[0][2], 'SHOULD BE FIRST')
+            self.assertEqual(result[0][2], 'should be first')
 
             self.assertEqual(result[1][0], 1)
             self.assertEqual(result[1][1], 3)
-            self.assertEqual(result[1][2], 'SHOULD BE SECOND')
+            self.assertEqual(result[1][2], 'should be second')
 
             self.assertEqual(result[2][0], 2)
             self.assertEqual(result[2][1], 1)
-            self.assertEqual(result[2][2], 'SHOULD BE THIRD')
+            self.assertEqual(result[2][2], 'should be third')
 
         with self.subTest('empty list'):
             self.assertEqual(processor.parse_data_into_list_of_projects([]), [])
@@ -145,3 +147,20 @@ class ProcessDataTest(TestCase):
                 self.assertEqual(result.high_cost_travel_days, expectation.high_cost_travel_days)
                 self.assertEqual(result.low_cost_full_days, expectation.low_cost_full_days)
                 self.assertEqual(result.low_cost_travel_days, expectation.low_cost_travel_days)
+
+
+class GetDataFromCSVTest(TestCase):
+    def test_normal_behavior_using_our_example_file(self):
+        filename = Path(__file__).parent.parent / 'data_file_example.csv'
+        result = processor.get_data_from_csv(filename)
+        self.assertEqual(len(result), 2)
+        self.assertEqual(
+            result[0]['start_date'],
+            '2024-01-25',
+            msg='Warning: brittle test! Might break if the example data file has been altered.',
+        )
+
+    def test_with_invalid_filename(self):
+        filename = 'doesnt_exists.xzy123'
+        with self.assertRaises(FileNotFoundError):
+            processor.get_data_from_csv(filename)

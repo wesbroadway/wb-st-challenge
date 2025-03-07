@@ -11,3 +11,5 @@ omit =
 [report]
 omit =
     /.tox/*
+exclude_lines =
+    if __name__ == .__main__.:
