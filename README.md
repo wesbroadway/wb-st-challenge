@@ -14,14 +14,18 @@ This is a tool that will calculate the total reimbursement amount for a set of d
 
 ## Installation:
 
-Prerequisites: Python 3.9, 3.10, and/or Python 3.11. Ideally you've got `tox` installed and all three of those versions available.
+**Docker**
+
+This project can be run via `docker compose`:
+
+    $ docker compose up --build
+
+**Local python**
+
+Ideally you've got Python 3.9, 3.10, and/or Python 3.11 available, and possibly `tox`. If not, you should still be able to run this using which version of Python you've got.
 
     git clone https://github.com/wesbroadway/wb-st-challenge.git
     cd wb-st-challenge
-
-## Usage instructions:
-
-To use whichever old version of Python you've got (which should be fine!), you can run it like this:
 
 **Bash:**
 

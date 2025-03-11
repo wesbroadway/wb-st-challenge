@@ -80,8 +80,7 @@ def get_set_2() -> list:
 
 def get_set_2_expectation() -> Expectation:
     return Expectation(
-        # NOTE: this assumes that the highest daily rate is the rate to be used when there's overlap with high/low
-        #  cost zones. Request for clarification has been sent to the client.
+        # NOTE: the highest daily rate is the rate to be used when there's overlap with high/low cost zones
         total=(LOW_COST_TRAVEL_DAY_RATE * 2) + (LOW_COST_FULL_DAY_RATE * 2) + (HIGH_COST_FULL_DAY_RATE * 5),
         high_cost_full_days=5,
         high_cost_travel_days=0,
@@ -175,8 +174,7 @@ def get_set_5() -> list:
 def get_set_5_expectation() -> Expectation:
     return Expectation(
         total=(
-            # NOTE: this assumes that the highest daily rate is the rate to be used when there's overlap with high/low
-            #  cost zones. Request for clarification has been sent to the client.
+            # NOTE: the highest daily rate is the rate to be used when there's overlap with high/low cost zones
             (LOW_COST_TRAVEL_DAY_RATE * 0)
             + (LOW_COST_FULL_DAY_RATE * 0)
             + (HIGH_COST_TRAVEL_DAY_RATE * 2)
@@ -219,8 +217,7 @@ def get_set_6() -> list:
 def get_set_6_expectation() -> Expectation:
     return Expectation(
         total=(
-            # NOTE: this assumes that the highest daily rate is the rate to be used when there's overlap with high/low
-            #  cost zones. Request for clarification has been sent to the client.
+            # NOTE: the highest daily rate is the rate to be used when there's overlap with high/low cost zones
             (LOW_COST_TRAVEL_DAY_RATE * 1)
             + (LOW_COST_FULL_DAY_RATE * 1)
             + (HIGH_COST_TRAVEL_DAY_RATE * 1)

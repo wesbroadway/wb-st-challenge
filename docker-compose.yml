@@ -1,0 +1,21 @@
+version: '3'
+
+services:
+  tests-3.9:
+    image: "python:3.9-alpine"
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: python -m unittest discover tests -t .
+  tests-3.10:
+    image: "python:3.10-alpine"
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: python -m unittest discover tests -t .
+  tests-3.11:
+    image: "python:3.11-alpine"
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: python -m unittest discover tests -t .
